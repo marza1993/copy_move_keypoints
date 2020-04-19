@@ -5,7 +5,6 @@
 #include "CopyMoveDetectorSIFT.h"
 #include "MyUtility.h"
 #include "Colori_cv.h"
-#include "GeometryUtility.h"
 #include <fstream>
 
 using namespace std;

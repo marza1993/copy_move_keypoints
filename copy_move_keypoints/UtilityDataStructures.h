@@ -1,6 +1,6 @@
 #pragma once
 #include <opencv2/core.hpp>
-#include "dbscan.h"
+#include "./clustering/dbscan.h"
 
 
 // label per indicare se un match è valido o meno (e per quale motivo non è considerato valido)

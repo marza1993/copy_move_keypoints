@@ -2,7 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <opencv2/xfeatures2d.hpp>
-#include "GeometryUtility.h"
+#include "../geometry/GeometryUtility.h"
 
 using namespace std;
 using namespace cv;

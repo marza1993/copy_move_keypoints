@@ -42,14 +42,14 @@
     <ClCompile Include="MyUtility.cpp">
       <Filter>File di origine</Filter>
     </ClCompile>
-    <ClCompile Include="dbscan.cpp">
-      <Filter>clustering\src</Filter>
-    </ClCompile>
-    <ClCompile Include="GeometryUtility.cpp">
-      <Filter>geometry\src</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>File di origine</Filter>
+    </ClCompile>
+    <ClCompile Include="geometry\GeometryUtility.cpp">
+      <Filter>geometry\src</Filter>
+    </ClCompile>
+    <ClCompile Include="clustering\dbscan.cpp">
+      <Filter>clustering\src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -68,17 +68,17 @@
     <ClInclude Include="Colori_cv.h">
       <Filter>File di intestazione</Filter>
     </ClInclude>
-    <ClInclude Include="ClusterPointDataStructures.h">
-      <Filter>clustering\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="dbscan.h">
-      <Filter>clustering\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="IClusterPoint.h">
-      <Filter>clustering\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="GeometryUtility.h">
+    <ClInclude Include="geometry\GeometryUtility.h">
       <Filter>geometry\headers</Filter>
+    </ClInclude>
+    <ClInclude Include="clustering\ClusterPointDataStructures.h">
+      <Filter>clustering\headers</Filter>
+    </ClInclude>
+    <ClInclude Include="clustering\dbscan.h">
+      <Filter>clustering\headers</Filter>
+    </ClInclude>
+    <ClInclude Include="clustering\IClusterPoint.h">
+      <Filter>clustering\headers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

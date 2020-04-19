@@ -150,21 +150,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="clustering\dbscan.cpp" />
     <ClCompile Include="CopyMoveDetector.cpp" />
     <ClCompile Include="CopyMoveDetectorSIFT.cpp" />
+    <ClCompile Include="geometry\GeometryUtility.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="dbscan.cpp" />
-    <ClCompile Include="GeometryUtility.cpp" />
     <ClCompile Include="MyUtility.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ClusterPointDataStructures.h" />
+    <ClInclude Include="clustering\ClusterPointDataStructures.h" />
+    <ClInclude Include="clustering\dbscan.h" />
+    <ClInclude Include="clustering\IClusterPoint.h" />
     <ClInclude Include="Colori_cv.h" />
     <ClInclude Include="CopyMoveDetector.h" />
     <ClInclude Include="CopyMoveDetectorSIFT.h" />
-    <ClInclude Include="dbscan.h" />
-    <ClInclude Include="GeometryUtility.h" />
-    <ClInclude Include="IClusterPoint.h" />
+    <ClInclude Include="geometry\GeometryUtility.h" />
     <ClInclude Include="MyUtility.h" />
     <ClInclude Include="UtilityDataStructures.h" />
   </ItemGroup>

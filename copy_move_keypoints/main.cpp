@@ -37,7 +37,7 @@ unsigned int tot_orig = 0;
 
 void provaDetectionSingola()
 {
-    //string nomeFile = "DSC_0812tamp1.jpg";
+    string nomeFile = "DSC_0812tamp1.jpg";
     //string nomeFile = "DSC_1535tamp133.jpg";
     //string nomeFile = "CRW_4809_scale.jpg";
     //string nomeFile = "CRW_4853tamp132.jpg";
@@ -47,7 +47,7 @@ void provaDetectionSingola()
 
     //string nomeFile = "CRW_4809_scale.jpg";
     //string nomeFile = "sony_61_scale.jpg";
-    string nomeFile = "DSCN45tamp1.jpg";
+    //string nomeFile = "DSCN45tamp1.jpg";
 
     const cv::Mat input = cv::imread(DATA_SET_PATH + nomeFile, cv::IMREAD_GRAYSCALE);
     const cv::Mat input2 = cv::imread(DATA_SET_PATH + nomeFile, cv::IMREAD_GRAYSCALE);
@@ -57,26 +57,15 @@ void provaDetectionSingola()
     unsigned int minPuntiIntorno = 3;
     float sogliaLowe = 0.47;
     unsigned int sogliaSIFT = 92;
-    {
-        CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe);
-        detector.detect(input, true);
 
-        detector.getOuputImg(outputImg);
-        cv::imwrite(OUTPUT_PATH + nomeFile, outputImg);
-        cv::imshow("elaborazione", outputImg);
-        cv::waitKey(0);
-    }
-    
-    //{
-    //    CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe);
-    //    detector.detect(input2, true);
-    //    detector.getOuputImg(outputImg2);
-    //    cv::imwrite(OUTPUT_PATH + "2_" + nomeFile, outputImg2);
-    //    cv::imshow("elaborazione", outputImg2);
-    //    cv::waitKey(0);
-    //}
+    CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe);
+    detector.detect(input, true);
 
-
+    detector.getOuputImg(outputImg);
+    cv::imwrite(OUTPUT_PATH + nomeFile, outputImg);
+    cv::imshow("elaborazione", outputImg);
+    cv::waitKey(0);
+   
     
 }
 
