@@ -40,7 +40,7 @@ public:
 		this->pointID = pointID;
 	}
 
-	cv::Point2f getPoint()
+	cv::Point2f& getPoint()
 	{
 		return kp->pt;
 	}
