@@ -14,17 +14,23 @@
 #include <chrono>
 #include "CopyMoveDetectorSIFT.h";
 
-
 using namespace std;
 
-const string DATA_SET_PATH = "D:\\progetti\\dottorato\\copy_move\\MICC-F220\\";
+const string DB_0 = "MICC-F220";
+const string DB_1 = "MICC-F600";
+
+string DATA_SET_PATH;
 
 // path di output delle immagini classificate erroneamente(falsi negativi e falsi positivi)
-const string OUTPUT_PATH_FN = "D:\\progetti\\dottorato\\copy_move\\MICC-F220_output_cpp\\FN\\";
-const string OUTPUT_PATH_FP = "D:\\progetti\\dottorato\\copy_move\\MICC-F220_output_cpp\\FP\\";
-const string OUTPUT_PATH_TN = "D:\\progetti\\dottorato\\copy_move\\MICC-F220_output_cpp\\TN\\";
-const string OUTPUT_PATH_TP = "D:\\progetti\\dottorato\\copy_move\\MICC-F220_output_cpp\\TP\\";
-const string OUTPUT_PATH = "D:\\progetti\\dottorato\\copy_move\\MICC-F220_output_cpp\\";
+string OUTPUT_PATH;
+string OUTPUT_PATH_FN;
+string OUTPUT_PATH_FP;
+string OUTPUT_PATH_TN;
+string OUTPUT_PATH_TP;
+string NOME_FILE_GT;
+
+
+const string WINDOW_NAME = "elaborazione";
 
 // hashmap che contiene, per ogni immagine del data-set, il flag forged o meno. La chiave è il nome dell'immagine
 unordered_map<string, bool> groundTruth;
@@ -35,9 +41,24 @@ unsigned int tot_forged = 0;
 unsigned int tot_orig = 0;
 
 
+void setPaths(const string& DB_NAME)
+{
+    DATA_SET_PATH = "D:\\progetti\\dottorato\\copy_move\\" + DB_NAME + "\\";
+
+    // path di output delle immagini classificate erroneamente(falsi negativi e falsi positivi)
+    OUTPUT_PATH = "D:\\progetti\\dottorato\\copy_move\\" + DB_NAME + "_output_cpp\\";
+    OUTPUT_PATH_FN = OUTPUT_PATH + "FN\\";
+    OUTPUT_PATH_FP = OUTPUT_PATH + "FP\\";
+    OUTPUT_PATH_TN = OUTPUT_PATH + "TN\\";
+    OUTPUT_PATH_TP = OUTPUT_PATH + "TP\\";
+    NOME_FILE_GT = "groundtruth_" + DB_NAME + ".txt";
+}
+
+
 void provaDetectionSingola()
 {
-    string nomeFile = "DSC_0812tamp1.jpg";
+    // ****** MICC-F220 ******
+    //string nomeFile = "DSC_0812tamp1.jpg";
     //string nomeFile = "DSC_1535tamp133.jpg";
     //string nomeFile = "CRW_4809_scale.jpg";
     //string nomeFile = "CRW_4853tamp132.jpg";
@@ -49,21 +70,29 @@ void provaDetectionSingola()
     //string nomeFile = "sony_61_scale.jpg";
     //string nomeFile = "DSCN45tamp1.jpg";
 
+    // ****** MICC-F600 ******
+    string nomeFile = "_r30_s1200sweets.png";
+
+    setPaths(DB_1);
+
     const cv::Mat input = cv::imread(DATA_SET_PATH + nomeFile, cv::IMREAD_GRAYSCALE);
     const cv::Mat input2 = cv::imread(DATA_SET_PATH + nomeFile, cv::IMREAD_GRAYSCALE);
+
     cv::Mat outputImg;
     cv::Mat outputImg2;
 
     unsigned int minPuntiIntorno = 3;
     float sogliaLowe = 0.47;
-    unsigned int sogliaSIFT = 92;
+    unsigned int sogliaSIFT = 0;
 
     CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe);
     detector.detect(input, true);
 
     detector.getOuputImg(outputImg);
     cv::imwrite(OUTPUT_PATH + nomeFile, outputImg);
-    cv::imshow("elaborazione", outputImg);
+    cv::namedWindow(WINDOW_NAME, cv::WINDOW_NORMAL);
+    cv::resizeWindow(WINDOW_NAME, 800, 600);
+    cv::imshow(WINDOW_NAME, outputImg);
     cv::waitKey(0);
    
     
@@ -72,7 +101,7 @@ void provaDetectionSingola()
 void getGroundTruth()
 {
     // effettuo il parsing del file di testo per costruire la hashmap
-    std::ifstream infile(DATA_SET_PATH + "groundtruthDB_220.txt");
+    std::ifstream infile(DATA_SET_PATH + NOME_FILE_GT);
 
     if (infile.is_open())
     {
@@ -98,11 +127,27 @@ void getGroundTruth()
 
 void provaDataSet()
 {
-    getGroundTruth();
+    
     unsigned int minPuntiIntorno = 4;
     float sogliaLowe = 0.47;
-    unsigned int sogliaSIFT = 92;
+    unsigned int sogliaSIFT = 4000;
 
+    string risp = "0";
+
+    cout << "seleziona data-set: " << endl << "MICC-F220: 0 " << endl << "MICC-F600: 1" << endl;
+    cin >> risp;
+
+    
+    if (risp == "0")
+    {
+        setPaths(DB_0);
+    }
+    else
+    {
+        setPaths(DB_1);
+    }
+
+    getGroundTruth();
     // true positive
     unsigned int TP = 0;
     // false positive
@@ -114,7 +159,7 @@ void provaDataSet()
 
     unsigned int N_tampered_found = 0;
 
-    string risp = "n";
+    risp = "n";
     cout << "visualizzare le immagini elaborate? [s/n]" << endl;
     cin >> risp;
     bool visualizza = false;
@@ -166,7 +211,9 @@ void provaDataSet()
                 double random = ((double) rand()) / RAND_MAX;
                 if (visualizza)
                 {
-                    cv::imshow("elab", output);
+                    cv::namedWindow(WINDOW_NAME, cv::WINDOW_NORMAL);
+                    cv::resizeWindow(WINDOW_NAME, 800, 600);
+                    cv::imshow(WINDOW_NAME, output);
                     cv::waitKey(1);
                 }
                 if (false && salva && random >1)
@@ -180,13 +227,15 @@ void provaDataSet()
                 FP++;
                 if (visualizza)
                 {
-                    cv::imshow("elab", output);
+                    cv::namedWindow(WINDOW_NAME, cv::WINDOW_NORMAL);
+                    cv::resizeWindow(WINDOW_NAME, 800, 600);
+                    cv::imshow(WINDOW_NAME, output);
                     cv::waitKey(1);
                 }
                 if (salva)
                 {
                     cv::imwrite(OUTPUT_PATH_FP + "FP_" + nomeImmagine, output);
-                    cv::imwrite(OUTPUT_PATH_FP + nomeImmagine, input);
+                    //cv::imwrite(OUTPUT_PATH_FP + nomeImmagine, input);
                 }
             }
         }
@@ -198,13 +247,15 @@ void provaDataSet()
                 FN++;
                 if (visualizza)
                 {
-                    cv::imshow("elab", output);
+                    cv::namedWindow(WINDOW_NAME, cv::WINDOW_NORMAL);
+                    cv::resizeWindow(WINDOW_NAME, 800, 600);
+                    cv::imshow(WINDOW_NAME, output);
                     cv::waitKey(1);
                 }
                 if (salva)
                 {
                     cv::imwrite(OUTPUT_PATH_FN + "FN_" + nomeImmagine, output);
-                    cv::imwrite(OUTPUT_PATH_FN + nomeImmagine, input);
+                    //cv::imwrite(OUTPUT_PATH_FN + nomeImmagine, input);
                 }
             }
             else
@@ -212,7 +263,9 @@ void provaDataSet()
                 TN++;
                 if (visualizza)
                 {
-                    cv::imshow("elab", output);
+                    cv::namedWindow(WINDOW_NAME, cv::WINDOW_NORMAL);
+                    cv::resizeWindow(WINDOW_NAME, 800, 600);
+                    cv::imshow(WINDOW_NAME, output);
                     cv::waitKey(1);
                 }
                 if (salva && false)
@@ -247,7 +300,7 @@ void provaDataSet()
     outfile.open(OUTPUT_PATH + "risultati.csv", std::ios_base::app); // append instead of overwrite
     if (outfile.is_open())
     {
-        outfile << std::setprecision(3) << sogliaLowe << sep << minPuntiIntorno << sep << precision << sep << recall << sep << F1 << sep << accuracy << sep << TPR
+        outfile << std::setprecision(3) << sogliaSIFT << sep << sogliaLowe << sep << minPuntiIntorno << sep << precision << sep << recall << sep << F1 << sep << accuracy << sep << TPR
             << sep << FPR << sep << FNR << sep << TNR << sep << FP << sep << FN << endl;
         outfile.close();
     }

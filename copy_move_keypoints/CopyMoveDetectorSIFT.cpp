@@ -163,7 +163,7 @@ bool CopyMoveDetectorSIFT::detect()
 void CopyMoveDetectorSIFT::extractKeyPoints()
 {
 	// estraggo i keypoints SIFT
-	Ptr<SIFT> detectorPtr = SIFT::create(4000 * 0);
+	Ptr<SIFT> detectorPtr = SIFT::create(soglia_SIFT);
 	detectorPtr->detect(*inputImg, keypoints);
 
 	//writeKeyPoints(keypoints);
