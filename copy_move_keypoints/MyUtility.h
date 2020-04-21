@@ -1,6 +1,8 @@
 #pragma once
 
+#include "UtilityDataStructures.h"
 #include <vector>
+#include <opencv2/imgproc.hpp>
 
 class MyUtility
 {
@@ -13,6 +15,21 @@ public:
 	// NB: il vettore di output passato non può essere lo stesso di quello di input (infatti quest'ultimo è const).
 	static void eliminaDoppioni(const std::vector<std::vector<int>>& listaCoppie, std::vector<std::vector<int>>& listaCoppieNoDoppioni,
 								std::vector<int>& indiciRigheRimaste);
+
+
+
+	static void writeKeyPoints(std::vector<cv::KeyPoint>& keypoints);
+
+
+	static void writeDescriptors(cv::Mat& descriptors);
+
+
+	static void writeKnnMatches(std::vector<std::vector<cv::DMatch>>& knn_matches);
+
+
+	static void writeMatches(std::vector<KeyPointsMatch>& matches);
+
+
 
 };
 

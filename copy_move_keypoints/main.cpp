@@ -186,6 +186,7 @@ void provaDataSet()
                 if (salva)
                 {
                     cv::imwrite(OUTPUT_PATH_FP + "FP_" + nomeImmagine, output);
+                    cv::imwrite(OUTPUT_PATH_FP + nomeImmagine, input);
                 }
             }
         }
@@ -203,6 +204,7 @@ void provaDataSet()
                 if (salva)
                 {
                     cv::imwrite(OUTPUT_PATH_FN + "FN_" + nomeImmagine, output);
+                    cv::imwrite(OUTPUT_PATH_FN + nomeImmagine, input);
                 }
             }
             else

@@ -11,75 +11,17 @@ using namespace std;
 using namespace cv;
 using namespace xfeatures2d;
 
+
+enum nonValidPointLabel
+{
+	NOISE_POINT = NOISE,
+	POINT_SAME_CLUSTER =-2,
+	POINT_SMALL_CLUSTER = -3,
+};
+
 CopyMoveDetectorSIFT::CopyMoveDetectorSIFT() : CopyMoveDetectorSIFT(100, 3, 0.6)
 {
 	// costruttore con parametri di default
-}
-
-
-
-void writeKeyPoints(std::vector<cv::KeyPoint>& keypoints)
-{
-	ofstream myfile;
-	myfile.open("keypoints.csv");
-
-	for(auto& kp : keypoints)
-	{
-		myfile << kp.pt.x << ", " << kp.pt.y << ", " << kp.angle << ", " << kp.class_id << ", " << kp.octave << ", " << kp.response << ", " << kp.size << endl;
-	}
-
-	myfile.close();
-}
-
-void writeDescriptors(cv::Mat& descriptors)
-{
-	ofstream myfile;
-	myfile.open("descriptors.csv");
-
-	float* data = (float*)descriptors.ptr<float>(0);
-	for (size_t r = 0; r < descriptors.rows; r++)
-	{
-		for (size_t c = 0; c < descriptors.cols; c++)
-		{
-			myfile << data[r * descriptors.cols + c] << ", ";
-		}
-		myfile << endl;
-	}
-
-
-	myfile.close();
-}
-
-void writeKnnMatches(vector<vector<cv::DMatch>>& knn_matches)
-{
-	ofstream myfile;
-	myfile.open("knn.csv");
-
-	for (size_t i = 0; i < knn_matches.size(); i++)
-	{
-		for (size_t j = 0; j < knn_matches[0].size(); j++)
-		{
-			myfile << knn_matches[i][j].trainIdx << ", " << knn_matches[i][j].queryIdx << ", " << knn_matches[i][j].distance << ", ";
-		}
-		myfile << endl;
-	}
-
-	myfile.close();
-}
-
-
-void writeMatches(vector<KeyPointsMatch>& matches)
-{
-	ofstream myfile;
-	myfile.open("matches.csv");
-
-	for (auto& m : matches)
-	{
-		myfile << m.kp1->component(0) << ", " << m.kp1->component(1) << ", " << m.kp2->component(0) << ", " << m.kp2->component(1) << ", "
-			<< m.descriptorDistance << ", " << m.spatialDistance << ", " << m.label << endl;
-	}
-
-	myfile.close();
 }
 
 
@@ -124,19 +66,19 @@ void CopyMoveDetectorSIFT::drawOutputImg()
 		switch (match->kp1->getClusterID())
 		{
 
-		case NOISE:
+		case nonValidPointLabel::NOISE_POINT:
 
 			drawMarker(tempOutput, match->kp1->getPoint(), Colori::RED, cv::MARKER_TILTED_CROSS, 8, 1, cv::LINE_AA);
 			drawMarker(tempOutput, match->kp2->getPoint(), Colori::RED, cv::MARKER_TILTED_CROSS, 8, 1, cv::LINE_AA);
 			break;
 
-		case -2:
+		case nonValidPointLabel::POINT_SAME_CLUSTER:
 
 			circle(tempOutput, match->kp1->getPoint(), 5, Colori::CYAN, 1, cv::LINE_AA);
 			circle(tempOutput, match->kp2->getPoint(), 5, Colori::CYAN, 1, cv::LINE_AA);
 			break;
 
-		case -3:
+		case nonValidPointLabel::POINT_SMALL_CLUSTER:
 
 			circle(tempOutput, match->kp1->getPoint(), 5, Colori::BLUE, 1, cv::LINE_AA);
 			circle(tempOutput, match->kp2->getPoint(), 5, Colori::BLUE, 1, cv::LINE_AA);
@@ -240,7 +182,7 @@ void CopyMoveDetectorSIFT::extractKeyPoints()
 	//cout << "n. keypoints: " << keypoints.size() << endl;
 	// ottengo i descrittori dei keypoints
 	detectorPtr->compute(*inputImg, keypoints, descriptors);
-	//writeDescriptors(descriptors);
+	//MyUtility::writeDescriptors(descriptors);
 }
 
 
@@ -256,7 +198,7 @@ void CopyMoveDetectorSIFT::doKeyPointsMatching()
 	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
 	int k = 3;
 	matcher->knnMatch(descriptors, descriptors, knn_matches, k);
-	//writeKnnMatches(knn_matches);
+	//MyUtility::writeKnnMatches(knn_matches);
 }
 
 
@@ -310,7 +252,7 @@ void CopyMoveDetectorSIFT::filtraggioMatchLowe()
 
 		matchID++;
 	}
-	//writeMatches(tempMatches);
+	//MyUtility::writeMatches(tempMatches);
 }
 
 
