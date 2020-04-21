@@ -20,11 +20,11 @@ using namespace std;
 const string DATA_SET_PATH = "D:\\progetti\\dottorato\\copy_move\\MICC-F220\\";
 
 // path di output delle immagini classificate erroneamente(falsi negativi e falsi positivi)
-const string OUTPUT_PATH_FN = "D:\\progetti\\dottorato\\copy_move\\output_cpp\\FN\\";
-const string OUTPUT_PATH_FP = "D:\\progetti\\dottorato\\copy_move\\output_cpp\\FP\\";
-const string OUTPUT_PATH_TN = "D:\\progetti\\dottorato\\copy_move\\output_cpp\\TN\\";
-const string OUTPUT_PATH_TP = "D:\\progetti\\dottorato\\copy_move\\output_cpp\\TP\\";
-const string OUTPUT_PATH = "D:\\progetti\\dottorato\\copy_move\\output_cpp\\";
+const string OUTPUT_PATH_FN = "D:\\progetti\\dottorato\\copy_move\\MICC-F220_output_cpp\\FN\\";
+const string OUTPUT_PATH_FP = "D:\\progetti\\dottorato\\copy_move\\MICC-F220_output_cpp\\FP\\";
+const string OUTPUT_PATH_TN = "D:\\progetti\\dottorato\\copy_move\\MICC-F220_output_cpp\\TN\\";
+const string OUTPUT_PATH_TP = "D:\\progetti\\dottorato\\copy_move\\MICC-F220_output_cpp\\TP\\";
+const string OUTPUT_PATH = "D:\\progetti\\dottorato\\copy_move\\MICC-F220_output_cpp\\";
 
 // hashmap che contiene, per ogni immagine del data-set, il flag forged o meno. La chiave è il nome dell'immagine
 unordered_map<string, bool> groundTruth;

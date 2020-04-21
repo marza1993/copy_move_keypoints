@@ -15,7 +15,7 @@ using namespace xfeatures2d;
 enum nonValidPointLabel
 {
 	NOISE_POINT = NOISE,
-	POINT_SAME_CLUSTER =-2,
+	POINT_SAME_CLUSTER = -2,
 	POINT_SMALL_CLUSTER = -3,
 };
 
@@ -170,7 +170,7 @@ void CopyMoveDetectorSIFT::extractKeyPoints()
 
 	//int numOctaves = 3;
 	//int numScaleLevels = 4;
-	//Ptr<SURF> detectorPtr = SURF::create(soglia_SIFT, numOctaves, numScaleLevels);
+	//Ptr<SURF> detectorPtr = SURF::create(500, numOctaves, numScaleLevels);
 	//detectorPtr->detect(*inputImg, keypoints);
 
 	clusteredKeyPoints.reserve(keypoints.size());
