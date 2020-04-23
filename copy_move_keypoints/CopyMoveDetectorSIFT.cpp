@@ -25,15 +25,17 @@ CopyMoveDetectorSIFT::CopyMoveDetectorSIFT() : CopyMoveDetectorSIFT(100, 3, 0.6)
 }
 
 
-CopyMoveDetectorSIFT::CopyMoveDetectorSIFT(const unsigned int soglia_SIFT, const unsigned int minPtsNeighb, const float soglia_Lowe)
+CopyMoveDetectorSIFT::CopyMoveDetectorSIFT(const unsigned int soglia_SIFT, const unsigned int minPtsNeighb, const float soglia_Lowe,
+	const float eps, const float sogliaDescInCluster, const bool useFLANN)
 {
-
 	this->soglia_SIFT = soglia_SIFT;
 	this->minPtsNeighb = minPtsNeighb;
 	this->soglia_Lowe = soglia_Lowe;
 	this->N_clusterValidi = 0;
 	this->N_medioElementiCluster = 0;
-	this->dbscan_eps = -1;
+	this->dbscan_eps = eps;
+	this->sogliaDescInCluster = sogliaDescInCluster;
+	this->useFLANN = useFLANN;
 }
 
 // genera l'immagine di output con i risultati dell'elaborazione.
@@ -190,8 +192,9 @@ void CopyMoveDetectorSIFT::doKeyPointsMatching()
 	}
 
 	// effettuo il match tra i descrittori ricavando, per ogni descrittore, i suoi k più vicini
-	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE);
-	//Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
+	DescriptorMatcher::MatcherType metodoMatching = useFLANN ? DescriptorMatcher::FLANNBASED : DescriptorMatcher::BRUTEFORCE;
+	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(metodoMatching);
+
 	int k = 3;
 	matcher->knnMatch(descriptors, descriptors, knn_matches, k);
 	//MyUtility::writeKnnMatches(knn_matches);
@@ -299,6 +302,7 @@ void CopyMoveDetectorSIFT::filtraggioClustering()
 		return;
 	}
 
+	// creo la lista dei punti da clusterizzare con DBSCAN
 	vector<IClusterPoint*> punti;
 	punti.reserve(matchesPointers.size() * 2);
 	for (auto& match : matchesPointers)
@@ -307,10 +311,18 @@ void CopyMoveDetectorSIFT::filtraggioClustering()
 		punti.push_back((IClusterPoint*)match->kp2);
 	}
 
-	//DBSCAN dbscan(punti, minPtsNeighb);
-	DBSCAN dbscan(punti, minPtsNeighb, 50 * 1);
-	//dbscan.findOptimalEps();
-	dbscan_eps = dbscan.getEpsilon();	// per poterlo stampare come info alla fine
+	DBSCAN dbscan(punti, minPtsNeighb);
+
+	if (dbscan_eps == -1)
+	{
+		dbscan.findOptimalEps();
+		dbscan_eps = dbscan.getEpsilon();
+	}
+	else
+	{
+		dbscan.setEpsilon(dbscan_eps);
+	}
+	
 	dbscan.run();
 	
 	// ora all'interno del vettore matches i punti sono etichettati con le label dei cluster
@@ -343,7 +355,7 @@ void CopyMoveDetectorSIFT::filtraggioClustering()
 		}
 		else if (match->kp1->getClusterID() == match->kp2->getClusterID())
 		{
-			if (match->descriptorDistance >= minDescriptorDist + 0.25 * rangeDescriptorDist)
+			if (match->descriptorDistance >= minDescriptorDist + sogliaDescInCluster * rangeDescriptorDist)
 			{
 				// escludo i match per cui i punti appartengono allo stesso cluster
 				match->kp1->setClusterID(-2);

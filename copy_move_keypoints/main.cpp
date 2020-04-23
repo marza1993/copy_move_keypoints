@@ -44,6 +44,9 @@ unsigned int tot_orig = 0;
 const unsigned int minPuntiIntorno = 3;
 const float sogliaLowe = 0.43;
 const unsigned int sogliaSIFT = 4000 * 0;
+const float eps = 50;
+const float sogliaDescInCluster = 0.25;
+const bool useFLANN = false;
 bool visualizza = false;
 bool salva = false;
 
@@ -98,7 +101,7 @@ void provaDetectionSingola()
     cv::Mat outputImg;
     cv::Mat outputImg2;
 
-    CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe);
+    CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe, eps, sogliaDescInCluster, useFLANN);
     detector.detect(input, true);
 
     detector.getOuputImg(outputImg);
@@ -177,7 +180,7 @@ void runOnImageSubset(int threadID, int start, int end)
         
         input = cv::imread(DATA_SET_PATH + nomeImmagine, cv::IMREAD_GRAYSCALE);
 
-        CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe);
+        CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe, eps, sogliaDescInCluster, useFLANN);
 
         detector.detect(input, salva);
         if (salva)
@@ -364,8 +367,10 @@ void provaParallelDataSet()
     outfile.open(OUTPUT_PATH + "risultati.csv", std::ios_base::app); // append instead of overwrite
     if (outfile.is_open())
     {
-        outfile << std::setprecision(3) << sogliaSIFT << sep << sogliaLowe << sep << minPuntiIntorno << sep << precision << sep << recall << sep << F1 << sep << accuracy << sep << TPR
-            << sep << FPR << sep << FNR << sep << TNR << sep << FP << sep << FN << endl;
+        outfile << std::setprecision(3) << sogliaSIFT << sep << sogliaLowe << sep << minPuntiIntorno << sep
+            << eps << sep << sogliaDescInCluster << sep << useFLANN << sep
+            << precision << sep << recall << sep << F1 << sep << accuracy << sep << TPR << sep
+            << FPR << sep << FNR << sep << TNR << sep << FP << sep << FN << endl;
         outfile.close();
     }
 
@@ -434,7 +439,7 @@ void provaDataSet()
         cout << "immagine n. " << ++n << endl;
         input = cv::imread(DATA_SET_PATH + nomeImmagine, cv::IMREAD_GRAYSCALE);
 
-        CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe);
+        CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe, eps, sogliaDescInCluster, useFLANN);
 
         detector.detect(input, visualizza || salva);
         if (visualizza || salva)

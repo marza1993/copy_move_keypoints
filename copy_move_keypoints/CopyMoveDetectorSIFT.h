@@ -39,6 +39,7 @@ private:
 
 	float N_medioElementiCluster;
 
+	// se non viene passato un valore viene calcolato il valore ottimale con l'euristica presente nella classe DBSCAN
 	float dbscan_eps;
 
 	// soglia utilizzata per l'estrazione dei keypoints SIFT
@@ -49,6 +50,13 @@ private:
 
 	// soglia utilizzata per scartare i match poco significativi secondo il metodo descritto da Lowe nell'articolo originale
 	float soglia_Lowe;
+
+	// soglia utilizzata per determinare se due keypoints match appartenenti ad uno stesso cluster possono essere comunque
+	// considerati ancora match.
+	float sogliaDescInCluster;
+
+	// flag per determinare se effettuare il match tra keypoints con un approccio FLANN (approssimato e random) o con una ricerca esaustiva
+	bool useFLANN;
 
 	// disegna il risultato dell'elaborazione sull'immagine di output, in particolare i keypoints individuati, i match e
 	// i colori in base alle label assegnate ai match (il "motivo dello scarto")
@@ -78,7 +86,8 @@ public:
 	CopyMoveDetectorSIFT();
 
 	// costruttore in overload che permette di passare subito i parametri
-	CopyMoveDetectorSIFT(const unsigned int soglia_SIFT, const unsigned int minPtsNeighb, const float soglia_Lowe);
+	CopyMoveDetectorSIFT(const unsigned int soglia_SIFT, const unsigned int minPtsNeighb, const float soglia_Lowe, 
+		const float eps = -1, const float sogliaDescInCluster = 0.25, const bool useFLANN = true);
 
 	void setSogliaSIFT(unsigned int soglia_SIFT) {
 		this->soglia_SIFT = soglia_SIFT;
