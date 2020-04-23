@@ -108,8 +108,9 @@ void CopyMoveDetectorSIFT::drawOutputImg()
 
 	stream << "N. valid clusters: " << to_string(N_clusterValidi) << ", ";
 	stream << std::fixed << std::setprecision(2) << "eps: " << dbscan_eps << ", ";
-	stream << std::fixed << std::setprecision(2) << "N. medio elementi cluster: " << N_medioElementiCluster << ", ";
-	stream << "result: " << (forgedOrNot ? "forged" : "original");
+	stream << /*std::fixed << std::setprecision(2) <<*/ "Min pts cluster: " << minPtsNeighb << ", ";
+	stream << /*std::fixed << std::setprecision(2) <<*/ "Mean pts cluster: " << N_medioElementiCluster << ", ";
+	stream << (forgedOrNot ? "forged" : "original");
 	string elabInfoText = stream.str();
 
 	int y_start = 20;
@@ -168,18 +169,12 @@ void CopyMoveDetectorSIFT::extractKeyPoints()
 
 	//writeKeyPoints(keypoints);
 
-	//int numOctaves = 3;
-	//int numScaleLevels = 4;
-	//Ptr<SURF> detectorPtr = SURF::create(500, numOctaves, numScaleLevels);
-	//detectorPtr->detect(*inputImg, keypoints);
-
 	clusteredKeyPoints.reserve(keypoints.size());
 	for (size_t i = 0; i < keypoints.size(); i++)
 	{
 		clusteredKeyPoints.push_back(ClusteredKeyPoint(&keypoints[i], i));
 	}
 
-	//cout << "n. keypoints: " << keypoints.size() << endl;
 	// ottengo i descrittori dei keypoints
 	detectorPtr->compute(*inputImg, keypoints, descriptors);
 	//MyUtility::writeDescriptors(descriptors);
@@ -195,7 +190,8 @@ void CopyMoveDetectorSIFT::doKeyPointsMatching()
 	}
 
 	// effettuo il match tra i descrittori ricavando, per ogni descrittore, i suoi k più vicini
-	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
+	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE);
+	//Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
 	int k = 3;
 	matcher->knnMatch(descriptors, descriptors, knn_matches, k);
 	//MyUtility::writeKnnMatches(knn_matches);
@@ -214,6 +210,7 @@ void CopyMoveDetectorSIFT::filtraggioMatchLowe()
 	vector<float> descriptorDistances;
 	match_indici.reserve(knn_matches.size());
 	descriptorDistances.reserve(knn_matches.size());
+
 	
 	for (size_t i = 0; i < knn_matches.size(); i++)
 	{
@@ -235,6 +232,12 @@ void CopyMoveDetectorSIFT::filtraggioMatchLowe()
 	// creo la lista dei match con tutte le informazioni relative, utilizzando gli indici senza doppioni
 	tempMatches.reserve(indici_match_validi.size());
 
+	// E' necessario evitare di considerare due volte un match costituito da keypoints con stesse coordinate ma diverso "angle"
+	// (la SIFT detection può generare più keypoints punti con stesse coordinate x,y ma orientamento differente).
+	// Utilizzo dunque una hash-map in cui la chiave è una stringa costituita dalla concatenazione delle coordinate x,y 
+	// dei due keypoints che costituiscono il match.
+	unordered_map<string, int> n_matchForCoordsCouple;
+
 	int matchID = 0;
 	for (int id : indici_match_validi)
 	{
@@ -243,14 +246,27 @@ void CopyMoveDetectorSIFT::filtraggioMatchLowe()
 		ClusteredKeyPoint* kp1 = &clusteredKeyPoints[match_indici[id][0]];
 		ClusteredKeyPoint* kp2 = &clusteredKeyPoints[match_indici[id][1]];
 
-		KeyPointsMatch kpm(kp1, kp2, &descriptors.row(match_indici[id][0]), &descriptors.row(match_indici[id][1]), descriptorDistances[id], matchID);
-		tempMatches.push_back(kpm);
-		
-		// imposto i riferimenti dai keypoints al match costituito da questi
-		kp1->setParentMatch(&tempMatches.back());
-		kp2->setParentMatch(&tempMatches.back());
+		string keyXcoords = kp1->component(0) < kp2->component(0) ? (std::to_string((int)kp1->component(0)) + std::to_string((int)kp2->component(0)))
+			: (std::to_string((int)kp2->component(0)) + std::to_string((int)kp1->component(0)));
 
-		matchID++;
+		string keyYcoords = kp1->component(1) < kp2->component(1) ? (std::to_string((int)kp1->component(1)) + std::to_string((int)kp2->component(1)))
+			: (std::to_string((int)kp2->component(1)) + std::to_string((int)kp1->component(1)));
+		string key = keyXcoords + keyYcoords;
+
+		// verifico che non esista già un match per la stessa coppia di coppia di coordinate
+		if (n_matchForCoordsCouple.count(key) == 0)
+		{
+			n_matchForCoordsCouple[key] = 1;
+			KeyPointsMatch kpm(kp1, kp2, &descriptors.row(match_indici[id][0]), &descriptors.row(match_indici[id][1]), descriptorDistances[id], matchID);
+			tempMatches.push_back(kpm);
+
+			// imposto i riferimenti dai keypoints al match costituito da questi
+			kp1->setParentMatch(&tempMatches.back());
+			kp2->setParentMatch(&tempMatches.back());
+
+			matchID++;
+		}
+
 	}
 	//MyUtility::writeMatches(tempMatches);
 }
@@ -292,18 +308,13 @@ void CopyMoveDetectorSIFT::filtraggioClustering()
 	}
 
 	//DBSCAN dbscan(punti, minPtsNeighb);
-	DBSCAN dbscan(punti, minPtsNeighb, 50);
+	DBSCAN dbscan(punti, minPtsNeighb, 50 * 1);
 	//dbscan.findOptimalEps();
 	dbscan_eps = dbscan.getEpsilon();	// per poterlo stampare come info alla fine
 	dbscan.run();
 	
 	// ora all'interno del vettore matches i punti sono etichettati con le label dei cluster
 	
-	int debug_stesso_cluster = 0;
-	int debug_noise_noise = 0;
-	int debug_noise_valid = 0;
-	int debug_valid_valid = 0;
-
 	float maxDescriptorDist = 0;
 	float minDescriptorDist = 1.e6;
 	for (auto& match : matchesPointers)
@@ -327,32 +338,18 @@ void CopyMoveDetectorSIFT::filtraggioClustering()
 		// i match per cui almeno un punto risulta essere un outlier non sono più validi. 
 		if (match->kp1->getClusterID() == NOISE || match->kp2->getClusterID() == NOISE)
 		{
-			if (match->kp1->getClusterID() != NOISE || match->kp2->getClusterID() != NOISE)
-			{
-				debug_noise_valid++;
-			}
-			else
-			{
-				debug_noise_noise++;
-			}
-
 			// se un punto della coppia è un outlier, imposto anche l'altro come outlier.
 			match->kp1->getClusterID() == NOISE ? match->kp2->setClusterID(NOISE) : match->kp1->setClusterID(NOISE);
 		}
 		else if (match->kp1->getClusterID() == match->kp2->getClusterID())
 		{
-			if (match->descriptorDistance >= minDescriptorDist + 0.2 * rangeDescriptorDist)
+			if (match->descriptorDistance >= minDescriptorDist + 0.25 * rangeDescriptorDist)
 			{
 				// escludo i match per cui i punti appartengono allo stesso cluster
 				match->kp1->setClusterID(-2);
 				match->kp2->setClusterID(-2);
-				debug_stesso_cluster++;
 			}
 
-		}
-		else
-		{
-			debug_valid_valid++;
 		}
 	}
 
@@ -363,66 +360,73 @@ void CopyMoveDetectorSIFT::filtraggioClustering()
 	// faccio scorrere ogni cluster, tramite le label ottenute
 	vector<int>& clusterLabels = dbscan.getClusterLabels();
 
-	//for (size_t i = 1; i < clusterLabels.size(); i++)	// NB: parto da 1 perchè la prima label corrisponde a NOISE
-	//{
-	//	vector<IClusterPoint*>& puntiCluster_i = dbscan.getPointsInCluster(clusterLabels[i]);
-	//	int N_puntiCluster_validi = 0;
-	//	for (auto p : puntiCluster_i)
-	//	{
-	//		if (p->getClusterID() == clusterLabels[i])
-	//		{
-	//			N_puntiCluster_validi++;
-	//		}
-	//	}
-	//	if (N_puntiCluster_validi < minPtsNeighb)
-	//	{
-	//		for (auto p : puntiCluster_i)
-	//		{
-	//			if (p->getClusterID() == clusterLabels[i])
-	//			{
-	//				((ClusteredKeyPoint*)p)->getParentMatch()->kp1->setClusterID(-3);
-	//				((ClusteredKeyPoint*)p)->getParentMatch()->kp2->setClusterID(-3);
-	//			}
-	//		}
-	//	}
-	//	
-	//}
+	bool isChanging;
+	int debug_n_change = 0;
 
-	
-	unordered_map<int, int> numElementiValidiPerCluster;
-	
-
-	for (size_t i = 1; i < clusterLabels.size(); i++)	// NB: parto da 1 perchè la prima label corrisponde a NOISE
+	vector<bool> isValidCluster(clusterLabels.size(), true);
+	isValidCluster[0] = false;	// noise
+	do
 	{
-		vector<IClusterPoint*>& puntiCluster_i = dbscan.getPointsInCluster(clusterLabels[i]);
-		int N_puntiCluster_validi = 0;
-		for (auto p : puntiCluster_i)
+		isChanging = false;
+		for (size_t i = 1; i < clusterLabels.size(); i++)	// NB: parto da 1 perchè la prima label corrisponde a NOISE
 		{
-			if (p->getClusterID() == clusterLabels[i])
+			if (isValidCluster[i])
 			{
-				N_puntiCluster_validi++;
+				vector<IClusterPoint*>& puntiCluster_i = dbscan.getPointsInCluster(clusterLabels[i]);
+				int N_puntiCluster_validi = 0;
+				for (auto p : puntiCluster_i)
+				{
+					if (p->getClusterID() == clusterLabels[i])
+					{
+						N_puntiCluster_validi++;
+					}
+				}
+				if (N_puntiCluster_validi < minPtsNeighb)
+				{
+					for (auto p : puntiCluster_i)
+					{
+						if (p->getClusterID() == clusterLabels[i])
+						{
+							((ClusteredKeyPoint*)p)->getParentMatch()->kp1->setClusterID(-3);
+							((ClusteredKeyPoint*)p)->getParentMatch()->kp2->setClusterID(-3);
+						}
+					}
+					isChanging = true;
+					isValidCluster[i] = false;
+				}
 			}
 		}
-		numElementiValidiPerCluster[clusterLabels[i]] = N_puntiCluster_validi;
-	}
+		debug_n_change++;
+	} while (isChanging);
 
+
+	N_clusterValidi = 0;
 	N_medioElementiCluster = 0.0;
-
 	labelClusterValidi.reserve(clusterLabels.size() - 1);
+	
 	for (size_t i = 1; i < clusterLabels.size(); i++)
 	{
-		int n = numElementiValidiPerCluster[clusterLabels[i]];
-		if (n >= minPtsNeighb)
+		if (isValidCluster[i])
 		{
+			int N_puntiCluster_validi = 0;
+			vector<IClusterPoint*>& puntiCluster_i = dbscan.getPointsInCluster(clusterLabels[i]);
+			for (auto p : puntiCluster_i)
+			{
+				if (p->getClusterID() == clusterLabels[i])
+				{
+					N_puntiCluster_validi++;
+				}
+			}
+
 			N_clusterValidi++;
-			N_medioElementiCluster += n;
+			N_medioElementiCluster += N_puntiCluster_validi;
 			labelClusterValidi.push_back(clusterLabels[i]);
 		}
-		
 	}
-	
+
 	N_medioElementiCluster = N_medioElementiCluster / N_clusterValidi;
 	forgedOrNot = N_clusterValidi >= 1;
+	
 }
 
 
