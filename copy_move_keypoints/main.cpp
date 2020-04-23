@@ -40,6 +40,17 @@ vector<string> listaNomiImmagini;
 unsigned int tot_forged = 0;
 unsigned int tot_orig = 0;
 
+// parametri
+const unsigned int minPuntiIntorno = 3;
+const float sogliaLowe = 0.43;
+const unsigned int sogliaSIFT = 4000 * 0;
+bool visualizza = false;
+bool salva = false;
+
+
+// per parallelizzazione: un vettore per oguno dei thread, con i valori TP, FP, FN, TN
+vector<vector<unsigned int>> threadResults;
+
 
 void setPaths(const string& DB_NAME)
 {
@@ -69,21 +80,23 @@ void provaDetectionSingola()
     //string nomeFile = "CRW_4809_scale.jpg";
     //string nomeFile = "sony_61_scale.jpg";
     //string nomeFile = "DSCN45tamp1.jpg";
+    //string nomeFile = "CRW_4815_scale.jpg";
+    string nomeFile = "nikon_7_scale.jpg";
+
+
 
     // ****** MICC-F600 ******
-    string nomeFile = "_r30_s1200sweets.png";
+    //string nomeFile = "_r30_s1200sweets.png";
 
-    setPaths(DB_1);
+    setPaths(DB_0);
+    //setPaths(DB_1);
+    
 
     const cv::Mat input = cv::imread(DATA_SET_PATH + nomeFile, cv::IMREAD_GRAYSCALE);
     const cv::Mat input2 = cv::imread(DATA_SET_PATH + nomeFile, cv::IMREAD_GRAYSCALE);
 
     cv::Mat outputImg;
     cv::Mat outputImg2;
-
-    unsigned int minPuntiIntorno = 3;
-    float sogliaLowe = 0.47;
-    unsigned int sogliaSIFT = 0;
 
     CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe);
     detector.detect(input, true);
@@ -125,12 +138,242 @@ void getGroundTruth()
 }
 
 
+// mutex per sincronizzare l'accesso al std::cout
+std::mutex mtx_cout;
+
+// per parallelizzazione:
+// "start" e "end" sono gli indici che identificano il sottoinsieme di nomi di immagini
+// nel vettore globale "listaNomiImmagini".
+void runOnImageSubset(int threadID, int start, int end)
+{
+    // true positive
+    unsigned int TP = 0;
+    // false positive
+    unsigned int FP = 0;
+    // false negative
+    unsigned int FN = 0;
+    // true negative
+    unsigned int TN = 0;
+
+    unsigned int N_tampered_found = 0;
+
+    cv::Mat input, output;
+
+    {
+        std::lock_guard<std::mutex> lock(mtx_cout);
+        cout << "*******************" << endl;
+        cout << "thread with ID: " << threadID << endl;
+        cout << "start index: " << start << ", end index: " << end << endl;
+        cout << "*******************" << endl;
+    }
+
+    for (size_t i = start; i <= end; i++)
+    {
+        {
+            std::lock_guard<std::mutex> lock(mtx_cout);
+            cout << "thread " << threadID << ", immagine n. " << (i + 1) << endl;
+        }
+        string& nomeImmagine = listaNomiImmagini[i];
+        
+        input = cv::imread(DATA_SET_PATH + nomeImmagine, cv::IMREAD_GRAYSCALE);
+
+        CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe);
+
+        detector.detect(input, salva);
+        if (salva)
+        {
+            detector.getOuputImg(output);
+        }
+
+        bool tampered = detector.getIsForged();
+
+        if (tampered)
+        {
+            N_tampered_found++;
+            // se era effettivamente tampered
+            if (groundTruth[nomeImmagine])
+            {
+                TP++;
+                // salvo le TP solo con una certa probabilità
+                double random = ((double)rand()) / RAND_MAX;
+                
+                if (false && salva && random > 1)
+                {
+                    cv::imwrite(OUTPUT_PATH_TP + "TP_" + nomeImmagine, output);
+                }
+            }
+            // falso positivo
+            else
+            {
+                FP++;
+
+                if (salva)
+                {
+                    cv::imwrite(OUTPUT_PATH_FP + "FP_" + nomeImmagine, output);
+                    //cv::imwrite(OUTPUT_PATH_FP + nomeImmagine, input);
+                }
+            }
+        }
+        else
+        {
+            // falso negativo (l'immagine era tampered ma l'algoritmo non l'ha riconosciuta)
+            if (groundTruth[nomeImmagine])
+            {
+                FN++;
+
+                if (salva)
+                {
+                    cv::imwrite(OUTPUT_PATH_FN + "FN_" + nomeImmagine, output);
+                    //cv::imwrite(OUTPUT_PATH_FN + nomeImmagine, input);
+                }
+            }
+            else
+            {
+                TN++;
+
+                if (salva && false)
+                {
+                    cv::imwrite(OUTPUT_PATH_TN + "TN_" + nomeImmagine, output);
+                }
+            }
+        }
+    }
+
+    // aggiungo i risultati al vettore globale
+    if (threadResults[threadID].size() == 0)
+    {
+        threadResults[threadID].reserve(5);
+        threadResults[threadID].push_back(TP);
+        threadResults[threadID].push_back(FP);
+        threadResults[threadID].push_back(FN);
+        threadResults[threadID].push_back(TN);
+        threadResults[threadID].push_back(N_tampered_found);
+    }
+    else
+    {
+        threadResults[threadID][0] += TP;
+        threadResults[threadID][1] += FP;
+        threadResults[threadID][2] += FN;
+        threadResults[threadID][3] += TN;
+        threadResults[threadID][4] += N_tampered_found;
+    }
+
+}
+
+
+
+void provaParallelDataSet()
+{
+    string risp = "0";
+
+    cout << "seleziona data-set: " << endl << "MICC-F220: 0 " << endl << "MICC-F600: 1" << endl;
+    cin >> risp;
+
+
+    if (risp == "0")
+    {
+        setPaths(DB_0);
+    }
+    else
+    {
+        setPaths(DB_1);
+    }
+
+    getGroundTruth();
+
+    salva = false;
+    cout << "salvare le immagini elaborate? [s/n]" << endl;
+    cin >> risp;
+    if (risp == "s")
+    {
+        salva = true;
+    }
+
+    // ottengo il numero di processori logici disponibili
+    const auto processor_count = std::thread::hardware_concurrency();
+
+    // creo la lista dei thread: uno per ogni processore
+    vector<thread> threads(processor_count);
+    threadResults.resize(processor_count);
+
+    // inizio a misurare il tempo di elaborazione
+    auto start = std::chrono::steady_clock::now();
+
+    int startIndex;
+    int endIndex;
+
+    int N_immaginiPerThread = (int)(listaNomiImmagini.size() / processor_count);
+    //for (size_t i = 0; i < threads.size(); i++)
+    for (int i = threads.size() - 1; i >= 0; i--)
+    {
+        startIndex = N_immaginiPerThread * i;
+        endIndex = i == threads.size() - 1 ? listaNomiImmagini.size() - 1 : startIndex + N_immaginiPerThread - 1;
+        threads[i] = std::thread(runOnImageSubset, i, startIndex, endIndex);
+        //runOnImageSubset(i, startIndex, endIndex);
+    }
+
+    for (size_t i = 0; i < threads.size(); i++)
+    {
+        threads[i].join();
+    }
+
+
+    // fermo il cronometro
+    auto end = std::chrono::steady_clock::now();
+
+    // calcolo metriche: raccolgo i risultati dai vari thread
+    // true positive
+    unsigned int TP = 0;
+    // false positive
+    unsigned int FP = 0;
+    // false negative
+    unsigned int FN = 0;
+    // true negative
+    unsigned int TN = 0;
+
+    unsigned int N_tampered_found = 0;
+
+    for (auto& results : threadResults)
+    {
+        TP += results.at(0);
+        FP += results.at(1);
+        FN += results.at(2);
+        TN += results.at(3);
+        N_tampered_found += results.at(4);
+    }
+
+    double precision = ((double)TP) / N_tampered_found;
+    double TPR = ((double)TP) / tot_forged;
+    double recall = TPR;
+    double FPR = ((double)FP) / tot_orig;
+    double F1 = 2 / (1 / precision + 1 / recall);
+    double FNR = ((double)FN) / tot_forged;
+    double TNR = ((double)TN) / tot_orig;
+    double accuracy = ((double)(TP + TN)) / (TP + TN + FP + FN);
+    cout << "****************************" << endl;
+    cout << std::setprecision(3) << "precision: " << precision << ", recall: " << recall << ", F1-score: " << F1 << ", accuracy: " << accuracy << endl;
+    cout << "TPR " << TPR << ", FPR: " << FPR << ", FNR: " << FNR << ", TNR: " << TNR << endl 
+        << "FP: " << FP << ", FN: " << FN << ", TP: "  << TP << ", TN: " << TN << ", tot: " << (TP + TN + FP + FN) << endl;
+    cout << "tempo di elaborazione: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << " s" << std::endl;
+    cout << "****************************" << endl;
+
+    // scrivo i risultati su file con i relativi parametri
+    std::ofstream outfile;
+
+    string sep = ";";
+    outfile.open(OUTPUT_PATH + "risultati.csv", std::ios_base::app); // append instead of overwrite
+    if (outfile.is_open())
+    {
+        outfile << std::setprecision(3) << sogliaSIFT << sep << sogliaLowe << sep << minPuntiIntorno << sep << precision << sep << recall << sep << F1 << sep << accuracy << sep << TPR
+            << sep << FPR << sep << FNR << sep << TNR << sep << FP << sep << FN << endl;
+        outfile.close();
+    }
+
+}
+
+
 void provaDataSet()
 {
-    
-    unsigned int minPuntiIntorno = 4;
-    float sogliaLowe = 0.47;
-    unsigned int sogliaSIFT = 4000;
 
     string risp = "0";
 
@@ -148,6 +391,7 @@ void provaDataSet()
     }
 
     getGroundTruth();
+
     // true positive
     unsigned int TP = 0;
     // false positive
@@ -162,13 +406,13 @@ void provaDataSet()
     risp = "n";
     cout << "visualizzare le immagini elaborate? [s/n]" << endl;
     cin >> risp;
-    bool visualizza = false;
+    visualizza = false;
     if (risp == "s")
     {
         visualizza = true;
     }
     
-    bool salva = false;
+    salva = false;
     cout << "salvare le immagini elaborate? [s/n]" << endl;
     cin >> risp;
     if (risp == "s")
@@ -183,7 +427,7 @@ void provaDataSet()
 
     // inizio a misurare il tempo di elaborazione
     auto start = std::chrono::steady_clock::now();
-    //for (auto& nomeImmagine : listaNomiImmagini)
+
     for(size_t i = 0; i < listaNomiImmagini.size(); i++)
     {
         string& nomeImmagine = listaNomiImmagini[i];
@@ -304,8 +548,6 @@ void provaDataSet()
             << sep << FPR << sep << FNR << sep << TNR << sep << FP << sep << FN << endl;
         outfile.close();
     }
-    system("pause");
-
     
 }
 
@@ -314,11 +556,15 @@ void provaDataSet()
 
 int main(int argc, char** argv)
 {
-    
-    provaDataSet();
+
+    provaParallelDataSet();
+
+    //provaDataSet();
 
     //provaDetectionSingola();
 
+    system("pause");
+    
     return 0;
 }
 
