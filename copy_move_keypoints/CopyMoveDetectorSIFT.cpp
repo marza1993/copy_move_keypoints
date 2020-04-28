@@ -185,8 +185,8 @@ void CopyMoveDetectorSIFT::extractKeyPoints()
 
 void CopyMoveDetectorSIFT::doKeyPointsMatching()
 {
-
-	if (keypoints.size() == 0)
+	int k = 3;
+	if (keypoints.size() < k)
 	{
 		return;
 	}
@@ -195,7 +195,6 @@ void CopyMoveDetectorSIFT::doKeyPointsMatching()
 	DescriptorMatcher::MatcherType metodoMatching = useFLANN ? DescriptorMatcher::FLANNBASED : DescriptorMatcher::BRUTEFORCE;
 	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(metodoMatching);
 
-	int k = 3;
 	matcher->knnMatch(descriptors, descriptors, knn_matches, k);
 	//MyUtility::writeKnnMatches(knn_matches);
 }

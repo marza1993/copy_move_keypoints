@@ -18,6 +18,7 @@ using namespace std;
 
 const string DB_0 = "MICC-F220";
 const string DB_1 = "MICC-F600";
+const string DB_2 = "MICC-F2000";
 
 string DATA_SET_PATH;
 
@@ -41,12 +42,12 @@ unsigned int tot_forged = 0;
 unsigned int tot_orig = 0;
 
 // parametri
-const unsigned int minPuntiIntorno = 3;
-const float sogliaLowe = 0.43;
-const unsigned int sogliaSIFT = 4000 * 0;
-const float eps = 50;
-const float sogliaDescInCluster = 0.25;
-const bool useFLANN = false;
+unsigned int minPuntiIntorno = 2;
+float sogliaLowe = 0.43;
+unsigned int sogliaSIFT = 4000 * 0;
+float eps = -1; // 100;
+float sogliaDescInCluster = 0.14;
+bool useFLANN = false;
 bool visualizza = false;
 bool salva = false;
 
@@ -57,10 +58,10 @@ vector<vector<unsigned int>> threadResults;
 
 void setPaths(const string& DB_NAME)
 {
-    DATA_SET_PATH = "D:\\progetti\\dottorato\\copy_move\\" + DB_NAME + "\\";
+    DATA_SET_PATH = "D:\\dottorato\\copy_move\\" + DB_NAME + "\\";
 
     // path di output delle immagini classificate erroneamente(falsi negativi e falsi positivi)
-    OUTPUT_PATH = "D:\\progetti\\dottorato\\copy_move\\" + DB_NAME + "_output_cpp\\";
+    OUTPUT_PATH = "D:\\dottorato\\copy_move\\" + DB_NAME + "_output_cpp\\";
     OUTPUT_PATH_FN = OUTPUT_PATH + "FN\\";
     OUTPUT_PATH_FP = OUTPUT_PATH + "FP\\";
     OUTPUT_PATH_TN = OUTPUT_PATH + "TN\\";
@@ -93,6 +94,7 @@ void provaDetectionSingola()
 
     setPaths(DB_0);
     //setPaths(DB_1);
+    //setPaths(DB_3);
     
 
     const cv::Mat input = cv::imread(DATA_SET_PATH + nomeFile, cv::IMREAD_GRAYSCALE);
@@ -174,7 +176,7 @@ void runOnImageSubset(int threadID, int start, int end)
     {
         {
             std::lock_guard<std::mutex> lock(mtx_cout);
-            cout << "thread " << threadID << ", immagine n. " << (i + 1) << endl;
+            cout << "thread " << threadID << ", \timmagine n. " << (i + 1) << endl;
         }
         string& nomeImmagine = listaNomiImmagini[i];
         
@@ -269,17 +271,20 @@ void provaParallelDataSet()
 {
     string risp = "0";
 
-    cout << "seleziona data-set: " << endl << "MICC-F220: 0 " << endl << "MICC-F600: 1" << endl;
+    cout << "seleziona data-set: " << endl << "MICC-F220: 0 " << endl << "MICC-F600: 1" << endl << "MICC-F2000: 2" << endl;
     cin >> risp;
-
 
     if (risp == "0")
     {
         setPaths(DB_0);
     }
-    else
+    else if(risp == "1")
     {
         setPaths(DB_1);
+    }
+    else
+    {
+        setPaths(DB_2);
     }
 
     getGroundTruth();
@@ -561,12 +566,67 @@ void provaDataSet()
 
 int main(int argc, char** argv)
 {
+    // argomenti da linea di comando
+    bool areParametersSet = true;
+    if (argc > 1)
+    {
+        if (argc < 7)
+        {
+            cout << "argomenti insufficienti!" << endl;
+            areParametersSet = false;
+        }
+        else
+        {
+            minPuntiIntorno = std::stoi(std::string(argv[1]));
+            sogliaLowe = std::stof(std::string(argv[2]));
+            sogliaSIFT = std::stof(std::string(argv[3]));
+            eps = std::stoi(std::string(argv[4]));
+            sogliaDescInCluster = std::stof(std::string(argv[5]));
+            useFLANN = (bool) std::stoi(std::string(argv[6]));
+            cout << "parametri: " << endl;
+            cout << "minPuntiIntorno: " << minPuntiIntorno << endl
+                << "sogliaLowe: " << sogliaLowe << endl
+                << "sogliaSIFT: " << sogliaSIFT << endl
+                << "eps: " << eps << endl
+                << "sogliaDescInCluster: " << sogliaDescInCluster << endl
+                << "useFlann: " << useFLANN << endl;
+        }
+    }
+    else
+    {
+        cout << "parametri: " << endl;
+        cout << "minPuntiIntorno: " << endl;
+        cin >> minPuntiIntorno;
+        cout << "sogliaLowe: " << endl;
+        cin >> sogliaLowe;
+        cout << "sogliaSIFT: " << endl;
+        cin >> sogliaSIFT;
+        cout << "eps: " << endl;
+        cin >> eps;
+        cout << "sogliaDescInCluster: " << endl;
+        cin >> sogliaDescInCluster;
+        cout << "useFlann: " << endl;
+        cin >> useFLANN;
 
-    provaParallelDataSet();
+        cout << "parametri: " << endl;
+        cout << "minPuntiIntorno: " << minPuntiIntorno << endl
+            << "sogliaLowe: " << sogliaLowe << endl
+            << "sogliaSIFT: " << sogliaSIFT << endl
+            << "eps: " << eps << endl
+            << "sogliaDescInCluster: " << sogliaDescInCluster << endl
+            << "useFlann: " << useFLANN << endl;
+    }
 
-    //provaDataSet();
+    if (areParametersSet)
+    {
+        provaParallelDataSet();
+        
+        //provaDataSet();
 
-    //provaDetectionSingola();
+        //provaDetectionSingola();
+
+    }
+
 
     system("pause");
     
