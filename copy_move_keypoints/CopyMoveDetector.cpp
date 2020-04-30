@@ -1,8 +1,8 @@
 #include "CopyMoveDetector.h"
 #include <iostream>;
 
-CopyMoveDetector::CopyMoveDetector() {
-
+CopyMoveDetector::CopyMoveDetector()
+{
 	this->isSetInputImg = false;
 	this->visualizeElab = true;
 	this->forgedOrNot = false;
@@ -10,33 +10,39 @@ CopyMoveDetector::CopyMoveDetector() {
 	this->isOutputImgDrawn = false;
 }
 
-void CopyMoveDetector::setInputImg(const cv::Mat& inputImg) {
-
-	if (!inputImg.empty()) {
+void CopyMoveDetector::setInputImg(const cv::Mat& inputImg)
+{
+	if (!inputImg.empty())
+	{
 		this->inputImg = &inputImg;
 		this->isSetInputImg = true;
 	}
-	else {
+	else
+	{
 		std::cout << "The input image is empty!" << std::endl;
 	}
 }
 
-bool CopyMoveDetector::getIsForged() {
+bool CopyMoveDetector::getIsForged()
+{
 	return forgedOrNot;
 }
 
-bool CopyMoveDetector::getIsDetectionOk() {
+bool CopyMoveDetector::getIsDetectionOk()
+{
 	return isDetectionOk;
 }
 
-bool CopyMoveDetector::getOuputImg(cv::Mat& outputImg) {
-
-	if (isOutputImgDrawn) {
+bool CopyMoveDetector::getOuputImg(cv::Mat& outputImg)
+{
+	if (isOutputImgDrawn)
+	{
 		outputImg = this->outputImg;
 		return true;
 	}
 
-	if (isDetectionOk) {
+	if (isDetectionOk)
+	{
 		drawOutputImg();
 		return getOuputImg(outputImg);
 	}
@@ -44,6 +50,7 @@ bool CopyMoveDetector::getOuputImg(cv::Mat& outputImg) {
 	return false;
 }
 
-void CopyMoveDetector::setVisualizeElab(bool value) {
+void CopyMoveDetector::setVisualizeElab(bool value)
+{
 	this->visualizeElab = value;
 }

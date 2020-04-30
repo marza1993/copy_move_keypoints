@@ -174,9 +174,10 @@ void runOnImageSubset(int threadID, int start, int end)
 
     for (size_t i = start; i <= end; i++)
     {
+        if (threadID == 0)
         {
-            std::lock_guard<std::mutex> lock(mtx_cout);
-            cout << "thread " << threadID << ", \timmagine n. " << (i + 1) << endl;
+            cout << "thread " << threadID << ", immagine n. " << (i + 1) << endl;
+            cout << std::setprecision(2) << "stima avanzamento: " << (i / (float)(end - start + 1) * 100) << "%" << endl;
         }
         string& nomeImmagine = listaNomiImmagini[i];
         

@@ -4,7 +4,8 @@
 #include <iostream>
 
 
-class ClusterPoint2d : IClusterPoint {
+class ClusterPoint2d : IClusterPoint
+{
 
 	int clusterID;
 
@@ -12,15 +13,19 @@ public:
 
 	ClusterPoint2d(float x, float y) : x(x), y(y), clusterID(UNCLASSIFIED) {}
 
-	float operator [] (int i) {
+	float operator [] (int i)
+	{
 		return component(i);
 	}
 
-	float component(int i) {
-		if (i > 1) {
+	float component(int i)
+	{
+		if (i > 1)
+		{
 			throw std::exception("l'indice passato sfora");
 		}
-		switch (i) {
+		switch (i)
+		{
 		case 0:
 			return x;
 		case 1:
@@ -28,24 +33,28 @@ public:
 		}
 	}
 
-	double distanceFrom(const IClusterPoint& otherPoint) {
+	double distanceFrom(const IClusterPoint& otherPoint)
+	{
 		ClusterPoint2d& other = (ClusterPoint2d&)otherPoint;
-		return sqrt(pow(component(0) - other.component(0), 2) 
+		return sqrt(pow(component(0) - other.component(0), 2)
 			+ pow(component(1) - other.component(1), 2));
 	}
 
-	void setClusterID(int clusterID) {
+	void setClusterID(int clusterID)
+	{
 		this->clusterID = clusterID;
 	}
 
 
-	int getClusterID() {
+	int getClusterID()
+	{
 		return clusterID;
 	}
 
-	bool equals(const IClusterPoint& otherPoint, double tolerance = 0) {
+	bool equals(const IClusterPoint& otherPoint, double tolerance = 0)
+	{
 		ClusterPoint2d& other = (ClusterPoint2d&)otherPoint;
-		return (abs(component(0) - other.component(0)) <= tolerance 
+		return (abs(component(0) - other.component(0)) <= tolerance
 			&& abs(component(1) - other.component(1)) <= tolerance);
 	}
 
@@ -54,7 +63,8 @@ public:
 };
 
 
-class ClusterPoint3d : IClusterPoint {
+class ClusterPoint3d : IClusterPoint
+{
 
 	int clusterID;
 
@@ -62,15 +72,19 @@ public:
 
 	ClusterPoint3d(float x, float y, float z) : x(x), y(y), z(z), clusterID(UNCLASSIFIED) {}
 
-	float operator [] (int i) {
+	float operator [] (int i)
+	{
 		return component(i);
 	}
 
-	float component(int i) {
-		if (i > 2) {
+	float component(int i)
+	{
+		if (i > 2)
+		{
 			throw std::exception("l'indice passato sfora");
 		}
-		switch (i) {
+		switch (i)
+		{
 		case 0:
 			return x;
 		case 1:
@@ -80,25 +94,29 @@ public:
 		}
 	}
 
-	double distanceFrom(const IClusterPoint& otherPoint) {
+	double distanceFrom(const IClusterPoint& otherPoint)
+	{
 		ClusterPoint3d& other = (ClusterPoint3d&)otherPoint;
 		return sqrt(pow(component(0) - other.component(0), 2)
-			+ pow(component(1) - other.component(1), 2) 
+			+ pow(component(1) - other.component(1), 2)
 			+ pow(component(2) - other.component(2), 2));
 	}
 
-	void setClusterID(int clusterID) {
+	void setClusterID(int clusterID)
+	{
 		this->clusterID = clusterID;
 	}
 
 
-	int getClusterID() {
+	int getClusterID()
+	{
 		return clusterID;
 	}
 
-	bool equals(const IClusterPoint& otherPoint, double tolerance = 0) {
+	bool equals(const IClusterPoint& otherPoint, double tolerance = 0)
+	{
 		ClusterPoint3d& other = (ClusterPoint3d&)otherPoint;
-		return (abs(component(0) - other.component(0)) <= tolerance 
+		return (abs(component(0) - other.component(0)) <= tolerance
 			&& abs(component(1) - other.component(1)) <= tolerance
 			&& abs(component(2) - other.component(2)) <= tolerance);
 	}

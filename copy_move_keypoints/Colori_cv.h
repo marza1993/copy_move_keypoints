@@ -1,7 +1,8 @@
 #pragma once
 #include <opencv2/imgproc.hpp>
 
-class Colori {
+class Colori
+{
 
 public:
 
