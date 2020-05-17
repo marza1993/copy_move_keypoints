@@ -51,7 +51,6 @@ float sogliaLowe = 0.43;
 unsigned int sogliaSIFT = 4000 * 0;
 float eps = -1; // 100;
 float sogliaDescInCluster = 0.14;
-bool useFLANN = false;
 bool visualizza = false;
 bool salva = false;
 
@@ -107,7 +106,7 @@ void provaDetectionSingola()
 	cv::Mat outputImg;
 	cv::Mat outputImg2;
 
-	CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe, eps, sogliaDescInCluster, useFLANN);
+	CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe, eps, sogliaDescInCluster);
 	detector.detect(input, true);
 
 	detector.getOuputImg(outputImg);
@@ -180,6 +179,7 @@ void runOnImageSubset(int threadID, int start, int end)
 	{
 		if (threadID == 0)
 		{
+			std::lock_guard<std::mutex> lock(mtx_cout);
 			cout << "thread " << threadID << ", immagine n. " << (i + 1) << endl;
 			cout << std::setprecision(2) << "stima avanzamento: " << (i / (float)(end - start + 1) * 100) << "%" << endl;
 		}
@@ -187,7 +187,7 @@ void runOnImageSubset(int threadID, int start, int end)
 
 		input = cv::imread(DATA_SET_PATH + nomeImmagine, cv::IMREAD_GRAYSCALE);
 
-		CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe, eps, sogliaDescInCluster, useFLANN);
+		CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe, eps, sogliaDescInCluster);
 
 		detector.detect(input, salva);
 		if (salva)
@@ -378,7 +378,7 @@ void provaParallelDataSet()
 	if (outfile.is_open())
 	{
 		outfile << std::setprecision(3) << sogliaSIFT << sep << sogliaLowe << sep << minPuntiIntorno << sep
-			<< eps << sep << sogliaDescInCluster << sep << useFLANN << sep
+			<< eps << sep << sogliaDescInCluster << sep << 0 << sep
 			<< precision << sep << recall << sep << F1 << sep << accuracy << sep << TPR << sep
 			<< FPR << sep << FNR << sep << TNR << sep << FP << sep << FN << endl;
 		outfile.close();
@@ -392,17 +392,20 @@ void provaDataSet()
 
 	string risp = "0";
 
-	cout << "seleziona data-set: " << endl << "MICC-F220: 0 " << endl << "MICC-F600: 1" << endl;
+	cout << "seleziona data-set: " << endl << "MICC-F220: 0 " << endl << "MICC-F600: 1" << endl << "MICC-F2000: 2" << endl;
 	cin >> risp;
-
 
 	if (risp == "0")
 	{
 		setPaths(DB_0);
 	}
-	else
+	else if (risp == "1")
 	{
 		setPaths(DB_1);
+	}
+	else
+	{
+		setPaths(DB_2);
 	}
 
 	getGroundTruth();
@@ -449,7 +452,7 @@ void provaDataSet()
 		cout << "immagine n. " << ++n << endl;
 		input = cv::imread(DATA_SET_PATH + nomeImmagine, cv::IMREAD_GRAYSCALE);
 
-		CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe, eps, sogliaDescInCluster, useFLANN);
+		CopyMoveDetectorSIFT detector(sogliaSIFT, minPuntiIntorno, sogliaLowe, eps, sogliaDescInCluster);
 
 		detector.detect(input, visualizza || salva);
 		if (visualizza || salva)
@@ -548,7 +551,8 @@ void provaDataSet()
 	double accuracy = ((double)(TP + TN)) / (TP + TN + FP + FN);
 	cout << "****************************" << endl;
 	cout << std::setprecision(3) << "precision: " << precision << ", recall: " << recall << ", F1-score: " << F1 << ", accuracy: " << accuracy << endl;
-	cout << "TPR: " << TPR << ", FPR: " << FPR << ", FNR: " << FNR << ", TNR: " << TNR << endl;
+	cout << "TPR " << TPR << ", FPR: " << FPR << ", FNR: " << FNR << ", TNR: " << TNR << endl
+		<< "FP: " << FP << ", FN: " << FN << ", TP: " << TP << ", TN: " << TN << ", tot: " << (TP + TN + FP + FN) << endl;
 	cout << "tempo di elaborazione: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << " s" << std::endl;
 	cout << "****************************" << endl;
 
@@ -559,8 +563,10 @@ void provaDataSet()
 	outfile.open(OUTPUT_PATH + "risultati.csv", std::ios_base::app); // append instead of overwrite
 	if (outfile.is_open())
 	{
-		outfile << std::setprecision(3) << sogliaSIFT << sep << sogliaLowe << sep << minPuntiIntorno << sep << precision << sep << recall << sep << F1 << sep << accuracy << sep << TPR
-			<< sep << FPR << sep << FNR << sep << TNR << sep << FP << sep << FN << endl;
+		outfile << std::setprecision(3) << sogliaSIFT << sep << sogliaLowe << sep << minPuntiIntorno << sep
+			<< eps << sep << sogliaDescInCluster << sep << 0 << sep
+			<< precision << sep << recall << sep << F1 << sep << accuracy << sep << TPR << sep
+			<< FPR << sep << FNR << sep << TNR << sep << FP << sep << FN << endl;
 		outfile.close();
 	}
 
@@ -587,14 +593,12 @@ int main(int argc, char** argv)
 			sogliaSIFT = std::stof(std::string(argv[3]));
 			eps = std::stoi(std::string(argv[4]));
 			sogliaDescInCluster = std::stof(std::string(argv[5]));
-			useFLANN = (bool)std::stoi(std::string(argv[6]));
 			cout << "parametri: " << endl;
 			cout << "minPuntiIntorno: " << minPuntiIntorno << endl
 				<< "sogliaLowe: " << sogliaLowe << endl
 				<< "sogliaSIFT: " << sogliaSIFT << endl
 				<< "eps: " << eps << endl
-				<< "sogliaDescInCluster: " << sogliaDescInCluster << endl
-				<< "useFlann: " << useFLANN << endl;
+				<< "sogliaDescInCluster: " << sogliaDescInCluster << endl;
 		}
 	}
 	else
@@ -610,16 +614,13 @@ int main(int argc, char** argv)
 		cin >> eps;
 		cout << "sogliaDescInCluster: " << endl;
 		cin >> sogliaDescInCluster;
-		cout << "useFlann: " << endl;
-		cin >> useFLANN;
 
 		cout << "parametri: " << endl;
 		cout << "minPuntiIntorno: " << minPuntiIntorno << endl
 			<< "sogliaLowe: " << sogliaLowe << endl
 			<< "sogliaSIFT: " << sogliaSIFT << endl
 			<< "eps: " << eps << endl
-			<< "sogliaDescInCluster: " << sogliaDescInCluster << endl
-			<< "useFlann: " << useFLANN << endl;
+			<< "sogliaDescInCluster: " << sogliaDescInCluster << endl;
 	}
 
 	if (areParametersSet)

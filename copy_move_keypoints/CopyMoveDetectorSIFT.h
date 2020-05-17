@@ -1,6 +1,7 @@
 #pragma once
 #include "CopyMoveDetector.h"
 #include "UtilityDataStructures.h"
+#include "CudaMatrix.h"
 
 /*
 * Classe che implementa il metodo di forgery detection tramite un matching tra keypoints di tipo SIFT. 
@@ -29,7 +30,8 @@ private:
 	// vettore che contiene i puntatori ai keipoints estratti e la relativa label del cluster di appartenenza
 	std::vector<ClusteredKeyPoint> clusteredKeyPoints;
 
-	std::vector<std::vector<cv::DMatch>> knn_matches;
+	CudaMatrix<float> descriptorDistances;
+	CudaMatrix<unsigned int> bestMatchIndices;
 
 	// TODO aggiugere il numero di elementi per cluster
 
@@ -55,9 +57,6 @@ private:
 	// considerati ancora match.
 	float sogliaDescInCluster;
 
-	// flag per determinare se effettuare il match tra keypoints con un approccio FLANN (approssimato e random) o con una ricerca esaustiva
-	bool useFLANN;
-
 	// disegna il risultato dell'elaborazione sull'immagine di output, in particolare i keypoints individuati, i match e
 	// i colori in base alle label assegnate ai match (il "motivo dello scarto")
 	void drawOutputImg();
@@ -80,6 +79,9 @@ private:
 	// per effettuare un ulteriore filtraggio dei match (ad es. vengono eliminati i match tra punti riconosciuti come outliers)
 	void filtraggioClustering();
 
+	// mutex per sincronizzare l'accesso alla dll parallela (per la GPU)
+	static std::mutex mtxCuda;
+
 
 public:
 
@@ -87,7 +89,7 @@ public:
 
 	// costruttore in overload che permette di passare subito i parametri
 	CopyMoveDetectorSIFT(const unsigned int soglia_SIFT, const unsigned int minPtsNeighb, const float soglia_Lowe, 
-		const float eps = -1, const float sogliaDescInCluster = 0.25, const bool useFLANN = true);
+		const float eps = -1, const float sogliaDescInCluster = 0.25);
 
 	void setSogliaSIFT(unsigned int soglia_SIFT) {
 		this->soglia_SIFT = soglia_SIFT;
@@ -114,7 +116,8 @@ public:
 		tempMatches.clear();
 		keypoints.clear();
 		clusteredKeyPoints.clear();
-		knn_matches.clear();
+		descriptorDistances.clearData();
+		bestMatchIndices.clearData();
 		N_clusterValidi = 0;
 		N_medioElementiCluster = 0;
 		labelClusterValidi.clear();

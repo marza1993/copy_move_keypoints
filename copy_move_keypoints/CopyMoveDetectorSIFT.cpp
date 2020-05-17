@@ -2,15 +2,17 @@
 #include <iomanip>
 #include <sstream>
 #include <opencv2/imgproc.hpp>
+#include <fstream>
 #include "CopyMoveDetectorSIFT.h"
 #include "MyUtility.h"
 #include "Colori_cv.h"
-#include <fstream>
+
 
 using namespace std;
 using namespace cv;
 using namespace xfeatures2d;
 
+std::mutex CopyMoveDetectorSIFT::mtxCuda;
 
 enum nonValidPointLabel
 {
@@ -26,7 +28,7 @@ CopyMoveDetectorSIFT::CopyMoveDetectorSIFT() : CopyMoveDetectorSIFT(100, 3, 0.6)
 
 
 CopyMoveDetectorSIFT::CopyMoveDetectorSIFT(const unsigned int soglia_SIFT, const unsigned int minPtsNeighb, const float soglia_Lowe,
-	const float eps, const float sogliaDescInCluster, const bool useFLANN)
+	const float eps, const float sogliaDescInCluster)
 {
 	this->soglia_SIFT = soglia_SIFT;
 	this->minPtsNeighb = minPtsNeighb;
@@ -35,7 +37,6 @@ CopyMoveDetectorSIFT::CopyMoveDetectorSIFT(const unsigned int soglia_SIFT, const
 	this->N_medioElementiCluster = 0;
 	this->dbscan_eps = eps;
 	this->sogliaDescInCluster = sogliaDescInCluster;
-	this->useFLANN = useFLANN;
 }
 
 // genera l'immagine di output con i risultati dell'elaborazione.
@@ -191,37 +192,50 @@ void CopyMoveDetectorSIFT::doKeyPointsMatching()
 		return;
 	}
 
-	// effettuo il match tra i descrittori ricavando, per ogni descrittore, i suoi k più vicini
-	DescriptorMatcher::MatcherType metodoMatching = useFLANN ? DescriptorMatcher::FLANNBASED : DescriptorMatcher::BRUTEFORCE;
-	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(metodoMatching);
+	// effettuo il match tra i descrittori con la dll parallelizzata.
+	// ottengo il puntatore ai dati dei descrittori
+	float* descriptorsData = (float*)descriptors.ptr<float>(0);
 
-	matcher->knnMatch(descriptors, descriptors, knn_matches, k);
-	//MyUtility::writeKnnMatches(knn_matches);
+	// costruisco l'oggetto CudaMatrix passandogli il puntatore ai dati dei descrittori
+	CudaMatrix<float> cudaDescriptors(descriptors.rows, descriptors.cols, descriptorsData);
+
+	auto start = std::chrono::steady_clock::now();
+	std::lock_guard<std::mutex> lock(CopyMoveDetectorSIFT::mtxCuda);
+	
+	// calcolo le distanze tra i descrittori (i,j) e salvo gli indici dei migliori 3 match per ogni descrittore
+	if (!cudaDescriptors.computeSelfDistances(descriptorDistances, bestMatchIndices))
+	{
+		cout << "Errore nel calcolo dei match con cuda!" << endl;
+		return;
+	}
+	auto end = std::chrono::steady_clock::now();
+	cout << "n. descrittori: " << descriptors.rows << ", tempo per matching: " << 
+		std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms" << endl;
 }
 
 
 void CopyMoveDetectorSIFT::filtraggioMatchLowe()
 {
-	if (knn_matches.size() == 0)
+	if (bestMatchIndices.Rows() == 0)
 	{
 		return;
 	}
 
 	// costruisco la lista delle coppie di indici dei punti relativi ai match validi secondo il test di lowe
-	vector<vector<int>> match_indici;
-	vector<float> descriptorDistances;
-	match_indici.reserve(knn_matches.size());
-	descriptorDistances.reserve(knn_matches.size());
+	vector<vector<int>> match_indici_lowe;
+	vector<float> descriptorDistancesLowe;
+	match_indici_lowe.reserve(bestMatchIndices.Rows());
+	descriptorDistancesLowe.reserve(bestMatchIndices.Rows());
 
 	
-	for (size_t i = 0; i < knn_matches.size(); i++)
+	for (size_t i = 0; i < bestMatchIndices.Rows(); i++)
 	{
 		// NB: considero la seconda e terza colonna delle distanze(la prima è sempre 0, 
 		// perchè contiene le distanze tra i punti e loro stessi).
-		if (knn_matches[i][1].distance < soglia_Lowe * knn_matches[i][2].distance)
+		if(descriptorDistances(i, bestMatchIndices(i, 1)) < soglia_Lowe * descriptorDistances(i, bestMatchIndices(i, 2)))
 		{
-			match_indici.push_back({ knn_matches[i][1].trainIdx, knn_matches[i][1].queryIdx });
-			descriptorDistances.push_back(knn_matches[i][1].distance);
+			match_indici_lowe.push_back({ (int) i, (int) bestMatchIndices(i, 1) });
+			descriptorDistancesLowe.push_back(descriptorDistances(i, bestMatchIndices(i, 1)));
 		}
 	}
 
@@ -229,7 +243,7 @@ void CopyMoveDetectorSIFT::filtraggioMatchLowe()
 	// Questo perchè un match è individuato dalla coppia non ordinata di due punti
 	vector<vector<int>> match_indici_no_doppioni;
 	vector<int> indici_match_validi;
-	MyUtility::eliminaDoppioni(match_indici, match_indici_no_doppioni, indici_match_validi);
+	MyUtility::eliminaDoppioni(match_indici_lowe, match_indici_no_doppioni, indici_match_validi);
 
 	// creo la lista dei match con tutte le informazioni relative, utilizzando gli indici senza doppioni
 	tempMatches.reserve(indici_match_validi.size());
@@ -245,8 +259,8 @@ void CopyMoveDetectorSIFT::filtraggioMatchLowe()
 	{
 		// creo la struttura wrapper che mantiene le info complete sul match (coppia di punti, descrittori, distanza, validità del match)
 		// e la aggiungo alla lista dei match (campo della classe)
-		ClusteredKeyPoint* kp1 = &clusteredKeyPoints[match_indici[id][0]];
-		ClusteredKeyPoint* kp2 = &clusteredKeyPoints[match_indici[id][1]];
+		ClusteredKeyPoint* kp1 = &clusteredKeyPoints[match_indici_lowe[id][0]];
+		ClusteredKeyPoint* kp2 = &clusteredKeyPoints[match_indici_lowe[id][1]];
 
 		string keyXcoords = kp1->component(0) < kp2->component(0) ? (std::to_string((int)kp1->component(0)) + std::to_string((int)kp2->component(0)))
 			: (std::to_string((int)kp2->component(0)) + std::to_string((int)kp1->component(0)));
@@ -259,7 +273,7 @@ void CopyMoveDetectorSIFT::filtraggioMatchLowe()
 		if (n_matchForCoordsCouple.count(key) == 0)
 		{
 			n_matchForCoordsCouple[key] = 1;
-			KeyPointsMatch kpm(kp1, kp2, &descriptors.row(match_indici[id][0]), &descriptors.row(match_indici[id][1]), descriptorDistances[id], matchID);
+			KeyPointsMatch kpm(kp1, kp2, &descriptors.row(match_indici_lowe[id][0]), &descriptors.row(match_indici_lowe[id][1]), descriptorDistancesLowe[id], matchID);
 			tempMatches.push_back(kpm);
 
 			// imposto i riferimenti dai keypoints al match costituito da questi
