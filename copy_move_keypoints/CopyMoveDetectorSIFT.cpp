@@ -205,12 +205,13 @@ void CopyMoveDetectorSIFT::doKeyPointsMatching()
 	// calcolo le distanze tra i descrittori (i,j) e salvo gli indici dei migliori 3 match per ogni descrittore
 	if (!cudaDescriptors.computeSelfDistances(descriptorDistances, bestMatchIndices))
 	{
+		cout << "n.descrittori: " << descriptors.rows << endl;
 		cout << "Errore nel calcolo dei match con cuda!" << endl;
+		throw exception();
 		return;
 	}
 	auto end = std::chrono::steady_clock::now();
-	cout << "n. descrittori: " << descriptors.rows << ", tempo per matching: " << 
-		std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms" << endl;
+	cout << "n.descrittori: " << descriptors.rows << ", tempo per matching: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms" << endl;
 }
 
 
