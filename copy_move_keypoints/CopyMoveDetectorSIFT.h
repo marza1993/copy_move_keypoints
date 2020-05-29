@@ -2,6 +2,7 @@
 #include "CopyMoveDetector.h"
 #include "UtilityDataStructures.h"
 #include "CudaMatrix.h"
+#include "CudaMatrixSimmetric.h"
 
 /*
 * Classe che implementa il metodo di forgery detection tramite un matching tra keypoints di tipo SIFT. 
@@ -30,7 +31,7 @@ private:
 	// vettore che contiene i puntatori ai keipoints estratti e la relativa label del cluster di appartenenza
 	std::vector<ClusteredKeyPoint> clusteredKeyPoints;
 
-	CudaMatrix<float> descriptorDistances;
+	CudaMatrixSimmetric<float> descriptorDistances;
 	CudaMatrix<unsigned int> bestMatchIndices;
 
 	// TODO aggiugere il numero di elementi per cluster
