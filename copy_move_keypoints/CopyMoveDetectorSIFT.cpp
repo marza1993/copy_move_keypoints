@@ -372,8 +372,8 @@ void CopyMoveDetectorSIFT::filtraggioClustering()
 			if (match->descriptorDistance >= minDescriptorDist + sogliaDescInCluster * rangeDescriptorDist)
 			{
 				// escludo i match per cui i punti appartengono allo stesso cluster
-				match->kp1->setClusterID(-2);
-				match->kp2->setClusterID(-2);
+				match->kp1->setClusterID(nonValidPointLabel::POINT_SAME_CLUSTER);
+				match->kp2->setClusterID(nonValidPointLabel::POINT_SAME_CLUSTER);
 			}
 
 		}
@@ -413,8 +413,8 @@ void CopyMoveDetectorSIFT::filtraggioClustering()
 					{
 						if (p->getClusterID() == clusterLabels[i])
 						{
-							((ClusteredKeyPoint*)p)->getParentMatch()->kp1->setClusterID(-3);
-							((ClusteredKeyPoint*)p)->getParentMatch()->kp2->setClusterID(-3);
+							((ClusteredKeyPoint*)p)->getParentMatch()->kp1->setClusterID(nonValidPointLabel::POINT_SMALL_CLUSTER);
+							((ClusteredKeyPoint*)p)->getParentMatch()->kp2->setClusterID(nonValidPointLabel::POINT_SMALL_CLUSTER);
 						}
 					}
 					isChanging = true;

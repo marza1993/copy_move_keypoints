@@ -207,7 +207,7 @@ void runOnImageSubset(int threadID, int start, int end)
 				// salvo le TP solo con una certa probabilità
 				double random = ((double)rand()) / RAND_MAX;
 
-				if (false && salva && random > 1)
+				if (salva)//false && salva && random > 1)
 				{
 					cv::imwrite(OUTPUT_PATH_TP + "TP_" + nomeImmagine, output);
 				}
