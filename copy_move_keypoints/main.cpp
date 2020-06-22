@@ -6,6 +6,8 @@
 
 // prova da ramo parallelized......
 
+// prova dopo spostamento in D:\\progetti\\
+
 
 #include <string>
 #include <unordered_map>
@@ -220,7 +222,7 @@ void runOnImageSubset(int threadID, int start, int end)
 				if (salva)
 				{
 					cv::imwrite(OUTPUT_PATH_FP + "FP_" + nomeImmagine, output);
-					//cv::imwrite(OUTPUT_PATH_FP + nomeImmagine, input);
+					cv::imwrite(OUTPUT_PATH_FP + nomeImmagine, input);
 				}
 			}
 		}
@@ -234,7 +236,7 @@ void runOnImageSubset(int threadID, int start, int end)
 				if (salva)
 				{
 					cv::imwrite(OUTPUT_PATH_FN + "FN_" + nomeImmagine, output);
-					//cv::imwrite(OUTPUT_PATH_FN + nomeImmagine, input);
+					cv::imwrite(OUTPUT_PATH_FN + nomeImmagine, input);
 				}
 			}
 			else
