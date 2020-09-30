@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "copy_move_keypoints", "copy_move_keypoints\copy_move_keypoints.vcxproj", "{51961EA9-DD23-4EED-9CFD-4B7F50A14C7B}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Installer", "Installer\Installer.vdproj", "{E96A3B9F-CFB6-47B6-B06B-715AAECD49FA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,11 @@ Global
 		{51961EA9-DD23-4EED-9CFD-4B7F50A14C7B}.Release|x64.Build.0 = Release|x64
 		{51961EA9-DD23-4EED-9CFD-4B7F50A14C7B}.Release|x86.ActiveCfg = Release|Win32
 		{51961EA9-DD23-4EED-9CFD-4B7F50A14C7B}.Release|x86.Build.0 = Release|Win32
+		{E96A3B9F-CFB6-47B6-B06B-715AAECD49FA}.Debug|x64.ActiveCfg = Debug
+		{E96A3B9F-CFB6-47B6-B06B-715AAECD49FA}.Debug|x86.ActiveCfg = Debug
+		{E96A3B9F-CFB6-47B6-B06B-715AAECD49FA}.Release|x64.ActiveCfg = Release
+		{E96A3B9F-CFB6-47B6-B06B-715AAECD49FA}.Release|x64.Build.0 = Release
+		{E96A3B9F-CFB6-47B6-B06B-715AAECD49FA}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

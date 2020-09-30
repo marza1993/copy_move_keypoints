@@ -9,10 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="File di risorse">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
     <Filter Include="clustering">
       <UniqueIdentifier>{453eea3a-388b-47a8-a381-4aa11a090b80}</UniqueIdentifier>
     </Filter>
@@ -80,5 +76,17 @@
     <ClInclude Include="clustering\IClusterPoint.h">
       <Filter>clustering\headers</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="resource1.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="copy_move_keypoints1.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\NuitrackClientServer\icone\Alecive-Flatwoken-Apps-Computer-Remote.ico" />
   </ItemGroup>
 </Project>

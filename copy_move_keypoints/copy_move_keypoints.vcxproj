@@ -172,7 +172,15 @@
     <ClInclude Include="CopyMoveDetectorSIFT.h" />
     <ClInclude Include="geometry\GeometryUtility.h" />
     <ClInclude Include="MyUtility.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="resource1.h" />
     <ClInclude Include="UtilityDataStructures.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="copy_move_keypoints1.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\NuitrackClientServer\icone\Alecive-Flatwoken-Apps-Computer-Remote.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
