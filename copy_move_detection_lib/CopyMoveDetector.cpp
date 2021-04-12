@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "CopyMoveDetector.h"
 #include <iostream>
 

@@ -579,6 +579,8 @@ void provaDataSet()
 
 int main(int argc, char** argv)
 {
+
+	std::cout << "prova 09/04/2021" << std::endl;
 	// argomenti da linea di comando
 	bool areParametersSet = true;
 	if (argc > 1)
